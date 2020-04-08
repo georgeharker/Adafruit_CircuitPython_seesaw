@@ -154,7 +154,7 @@ class Seesaw:
     def sw_reset(self):
         """Trigger a software reset of the SeeSaw chip"""
         self.write8(_STATUS_BASE, _STATUS_SWRST, 0xFF)
-        time.sleep(0.500)
+        time.sleep(0.010)
 
         chip_id = self.read8(_STATUS_BASE, _STATUS_HW_ID)
 
@@ -427,7 +427,7 @@ class Seesaw:
         self.read(reg_base, reg, ret)
         return ret[0]
 
-    def read(self, reg_base, reg, buf, delay=0.008):
+    def read(self, reg_base, reg, buf, delay=0.0006):
         """Read an arbitrary I2C register range on the device"""
         self.write(reg_base, reg)
         if self._drdy is not None:
