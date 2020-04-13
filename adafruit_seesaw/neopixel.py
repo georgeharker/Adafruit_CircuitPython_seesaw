@@ -82,7 +82,7 @@ class NeoPixel:
         *,
         bpp=3,
         brightness=1.0,
-        auto_write=True,
+        auto_write=False,
         pixel_order=None
     ):
         # TODO: brightness not yet implemented.
