@@ -9,5 +9,6 @@ bundles
 .eggs
 dist
 **/*.egg-info
+._*
 *.swp
 *.swo
