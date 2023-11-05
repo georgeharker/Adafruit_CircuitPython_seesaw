@@ -427,6 +427,12 @@ class Seesaw:
         self.read(reg_base, reg, ret)
         return ret[0]
 
+    def readn(self, reg_base, reg, n):
+        """Read an arbitrary I2C byte register on the device"""
+        ret = bytearray(n)
+        self.read(reg_base, reg, ret)
+        return ret
+
     def read(self, reg_base, reg, buf, delay=0.0006):
         """Read an arbitrary I2C register range on the device"""
         self.write(reg_base, reg)

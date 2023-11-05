@@ -26,6 +26,10 @@
 ====================================================
 """
 
+import struct
+from enum import IntEnum
+from typing import NamedTuple
+
 try:
     from micropython import const
 except ImportError:
@@ -47,6 +51,30 @@ _KEYPAD_INTENSET = const(0x02)
 _KEYPAD_INTENCLR = const(0x03)
 _KEYPAD_COUNT = const(0x04)
 _KEYPAD_FIFO = const(0x10)
+
+
+class ResponseType(IntEnum):
+    # Types for the repsonse
+    TYPE_KEY = 0
+    TYPE_COUNT = 1
+    TYPE_STATUS = 2
+    TYPE_INVALID = 0xff
+
+
+class SeesawKeyResponse(NamedTuple):
+    response_type: ResponseType
+    data: int
+
+    unpacker: struct.Struct = struct.Struct('<BB')
+
+    @classmethod
+    def unpack(cls, buf: bytearray):
+        return SeesawKeyResponse(*cls.unpacker.unpack(buf))
+
+    @classmethod
+    def unpack_from(cls, buf: bytearray, frm: int):
+        return SeesawKeyResponse(*cls.unpacker.unpack_from(buf, frm))
+
 
 # pylint: disable=too-few-public-methods
 class KeyEvent:
@@ -103,7 +131,11 @@ class Keypad(Seesaw):
     @property
     def count(self):
         """Retrieve or set the number of keys"""
-        return self.read8(_KEYPAD_BASE, _KEYPAD_COUNT)
+        buf = self.readn(_KEYPAD_BASE, _KEYPAD_COUNT, 2)
+        d = SeesawKeyResponse.unpack(buf)
+        if d.response_type != self.TYPE_COUNT:
+            return 0
+        return d.data
 
     # pylint: disable=unused-argument, no-self-use
     @count.setter
@@ -134,6 +166,8 @@ class Keypad(Seesaw):
         """Read data from the keypad
 
         :param int num: The number of bytes to read"""
-        ret = bytearray(num)
-        self.read(_KEYPAD_BASE, _KEYPAD_FIFO, ret)
-        return ret
+        buf = bytearray(num * 2)
+        self.read(_KEYPAD_BASE, _KEYPAD_FIFO, buf)
+
+        return [SeesawKeyResponse.unpack_from(buf, i)
+            for i in range(0, num)]
