@@ -117,6 +117,50 @@ class NeoPixel:
     def __len__(self):
         return self._n
 
+    def setbuf(self, colors):
+        """Set one pixel to a new value"""
+        cmd = bytearray(2 + self._bpp * len(colors))
+        struct.pack_into(">H", cmd, 0, 0)
+        i = 0
+        for color in colors:
+            if isinstance(color, int):
+                w = color >> 24
+                r = (color >> 16) & 0xff
+                g = (color >> 8) & 0xff
+                b = color & 0xff
+            else:
+                if self._bpp == 3:
+                    r, g, b = color
+                else:
+                    r, g, b, w = color
+
+            # if all components are the same and we have a white pixel then use it
+            # instead of the individual components.
+            if self._bpp == 4 and r == g == b and w == 0:
+                w = r
+                r = 0
+                g = 0
+                b = 0
+
+            if self.brightness < 0.99:
+                r = int(r * self.brightness)
+                g = int(g * self.brightness)
+                b = int(b * self.brightness)
+                if self._bpp == 4:
+                    w = int(w * self.brightness)
+
+            # store colors in correct slots
+            cmd[2 + self._pixel_order[0] * i] = r
+            cmd[2 + self._pixel_order[1] * i] = g
+            cmd[2 + self._pixel_order[2] * i] = b
+            if self._bpp == 4:
+                cmd[2 + self._pixel_order[3] * i] = w
+            i += 1
+
+        self._seesaw.write(_NEOPIXEL_BASE, _NEOPIXEL_BUF, cmd)
+        if self.auto_write:
+            self.show()
+
     def __setitem__(self, key, color):
         """Set one pixel to a new value"""
         cmd = bytearray(2 + self._bpp)
