@@ -150,11 +150,11 @@ class NeoPixel:
                     w = int(w * self.brightness)
 
             # store colors in correct slots
-            cmd[2 + self._pixel_order[0] * i] = r
-            cmd[2 + self._pixel_order[1] * i] = g
-            cmd[2 + self._pixel_order[2] * i] = b
+            cmd[2 + self._pixel_order[0] + i * self._bpp] = r
+            cmd[2 + self._pixel_order[1] + i * self._bpp] = g
+            cmd[2 + self._pixel_order[2] + i * self._bpp] = b
             if self._bpp == 4:
-                cmd[2 + self._pixel_order[3] * i] = w
+                cmd[2 + self._pixel_order[3] + i * self._bpp] = w
             i += 1
 
         self._seesaw.write(_NEOPIXEL_BASE, _NEOPIXEL_BUF, cmd)
