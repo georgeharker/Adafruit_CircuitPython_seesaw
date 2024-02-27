@@ -170,7 +170,7 @@ class Encoder(Seesaw):
             raise ValueError("invalid edge")
 
         cmd = bytearray(2)
-        value = enable << 10 | (1 << (edge + 4) | (enc & 0xF)
+        value = enable << 10 | (1 << (edge + 4)) | (enc & 0xF)
         cmd[0] = (value & 0xFF00) >> 8
         cmd[1] = (value & 0x00FF)
 
