@@ -150,7 +150,7 @@ class Encoder(Seesaw):
         """Retrieve or set the number of event"""
         buf = self.readn(_ENCODER_BASE, _ENCODER_COUNT, 5)
         d = SeesawEncoderResponse.unpack(buf)
-        if d.response_type != self.TYPE_COUNT:
+        if d.response_type != ResponseType.TYPE_COUNT:
             return 0
         return d.data
 
