@@ -27,8 +27,10 @@
 """
 
 import struct
+from dataclasses import dataclass
 from enum import IntEnum
 from typing import NamedTuple
+from typing import ClassVar
 
 try:
     from micropython import const
@@ -67,14 +69,16 @@ class ResponseType(IntEnum):
     TYPE_INVALID = 0xff
 
 
-class SeesawEncoderResponse(NamedTuple):
+@dataclass
+class SeesawEncoderResponse:
     response_type: ResponseType
     data: int
 
-    unpacker: struct.Struct = struct.Struct('<BB')
+    unpacker: ClassVar[struct.Struct] = struct.Struct('<BI')
 
     @classmethod
     def unpack(cls, buf: bytearray):
+        print(type(cls.unpacker))
         return SeesawEncoderResponse(*cls.unpacker.unpack(buf))
 
     @classmethod
@@ -144,7 +148,7 @@ class Encoder(Seesaw):
     @property
     def count(self):
         """Retrieve or set the number of event"""
-        buf = self.readn(_ENCODER_BASE, _ENCODER_COUNT, 2)
+        buf = self.readn(_ENCODER_BASE, _ENCODER_COUNT, 5)
         d = SeesawEncoderResponse.unpack(buf)
         if d.response_type != self.TYPE_COUNT:
             return 0
@@ -180,7 +184,7 @@ class Encoder(Seesaw):
         """Read data from the keypad
 
         :param int num: The number of bytes to read"""
-        buf = bytearray(num * 2)
+        buf = bytearray(num * 5)
         self.read(_ENCODER_BASE, _ENCODER_FIFO, buf)
 
         return [SeesawEncoderResponse.unpack_from(buf, i)
