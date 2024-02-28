@@ -49,13 +49,13 @@ _ENCODER_BASE = const(0x11)
 
 
 _ENCODER_STATUS = const(0x00)
-_ENCODER_EVENT = const(0x01)
-_ENCODER_INTENSET = const(0x02)
-_ENCODER_INTENCLR = const(0x03)
-_ENCODER_POSITION = const(0x04)
-_ENCODER_DELTA = const(0x05)
-_ENCODER_COUNT = const(0x06)
-_ENCODER_FIFO = const(0x10)
+_ENCODER_EVENT = const(0x10)
+_ENCODER_INTENSET = const(0x20)
+_ENCODER_INTENCLR = const(0x30)
+_ENCODER_POSITION = const(0x40)
+_ENCODER_DELTA = const(0x50)
+_ENCODER_COUNT = const(0x60)
+_ENCODER_FIFO = const(0x70)
 
 _NUM_ENCODERS = const(8)
 
@@ -72,13 +72,13 @@ class ResponseType(IntEnum):
 @dataclass
 class SeesawEncoderResponse:
     response_type: ResponseType
+    enc: int
     data: int
 
-    unpacker: ClassVar[struct.Struct] = struct.Struct('<BI')
+    unpacker: ClassVar[struct.Struct] = struct.Struct('<BBH')
 
     @classmethod
     def unpack(cls, buf: bytearray):
-        print(type(cls.unpacker))
         return SeesawEncoderResponse(*cls.unpacker.unpack(buf))
 
     @classmethod
@@ -122,6 +122,7 @@ class Encoder(Seesaw):
     #: Indicates that the delta was recently updated
     DELTA = 5
 
+    packer: ClassVar[struct.Struct] = struct.Struct('>I')
 
     def __init__(self, i2c_bus, addr=0x49, drdy=None, num_encoders = _NUM_ENCODERS):
         super(Encoder, self).__init__(i2c_bus, addr, drdy)
@@ -148,7 +149,7 @@ class Encoder(Seesaw):
     @property
     def count(self):
         """Retrieve or set the number of event"""
-        buf = self.readn(_ENCODER_BASE, _ENCODER_COUNT, 5)
+        buf = self.readn(_ENCODER_BASE, _ENCODER_COUNT, 4)
         d = SeesawEncoderResponse.unpack(buf)
         if d.response_type != ResponseType.TYPE_COUNT:
             return 0
@@ -161,7 +162,7 @@ class Encoder(Seesaw):
 
     # pylint: enable=unused-argument, no-self-use
 
-    def set_event(self, enc, edge, enable):  # FIXME
+    def set_event(self, enc, edge, enable):
         """Control which kinds of events are set
 
            :param int enc: The encoder number
@@ -170,22 +171,18 @@ class Encoder(Seesaw):
 
         if enable not in (True, False):
             raise ValueError("event enable must be True or False")
-        if edge > 3 or edge < 0:
+        if edge > 5 or edge < 0:
             raise ValueError("invalid edge")
 
-        cmd = bytearray(2)
-        value = enable << 10 | (1 << (edge + 4)) | (enc & 0xF)
-        cmd[0] = (value & 0xFF00) >> 8
-        cmd[1] = (value & 0x00FF)
-
+        cmd = self.packer.pack((enable << 20) | (1 << (edge + 4)) | enc)
         self.write(_ENCODER_BASE, _ENCODER_EVENT, cmd)
 
     def read_encoders(self, num):
         """Read data from the keypad
 
         :param int num: The number of bytes to read"""
-        buf = bytearray(num * 5)
+        buf = bytearray(num * 4)
         self.read(_ENCODER_BASE, _ENCODER_FIFO, buf)
 
-        return [SeesawEncoderResponse.unpack_from(buf, i)
+        return [SeesawEncoderResponse.unpack_from(buf, i * 4)
             for i in range(0, num)]
