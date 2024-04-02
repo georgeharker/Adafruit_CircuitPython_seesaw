@@ -69,13 +69,17 @@ class ResponseType(IntEnum):
     TYPE_INVALID = 0xff
 
 
+class EncderError(Exception):
+    pass
+
+
 @dataclass
 class SeesawEncoderResponse:
     response_type: ResponseType
     enc: int
     data: int
 
-    unpacker: ClassVar[struct.Struct] = struct.Struct('<BBH')
+    unpacker: ClassVar[struct.Struct] = struct.Struct('<BBh')
 
     @classmethod
     def unpack(cls, buf: bytearray):
@@ -152,7 +156,10 @@ class Encoder(Seesaw):
         buf = self.readn(_ENCODER_BASE, _ENCODER_COUNT, 4)
         d = SeesawEncoderResponse.unpack(buf)
         if d.response_type != ResponseType.TYPE_COUNT:
+            raise EncoderError("CORRUPTED %s" % list(["%x" % x for x in buf]))
             return 0
+        if d.data < 0:
+            raise EncoderError("CORRUPTED %s" % list(["%x" % x for x in buf]))
         return d.data
 
     # pylint: disable=unused-argument, no-self-use
@@ -183,6 +190,5 @@ class Encoder(Seesaw):
         :param int num: The number of bytes to read"""
         buf = bytearray(num * 4)
         self.read(_ENCODER_BASE, _ENCODER_FIFO, buf)
-
         return [SeesawEncoderResponse.unpack_from(buf, i * 4)
-            for i in range(0, num)]
+                for i in range(0, num)]
