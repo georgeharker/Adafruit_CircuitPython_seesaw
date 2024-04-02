@@ -79,6 +79,9 @@ class SeesawEncoderResponse:
     enc: int
     data: int
 
+    def __post_init__(self):
+        self.response_type = ResponseType(self.response_type)
+
     unpacker: ClassVar[struct.Struct] = struct.Struct('<BBh')
 
     @classmethod
