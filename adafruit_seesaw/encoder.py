@@ -59,6 +59,7 @@ _ENCODER_FIFO = const(0x70)
 
 _NUM_ENCODERS = const(8)
 
+
 class ResponseType(IntEnum):
     # Types for the repsonse
     TYPE_VALUE = 0,
@@ -69,7 +70,7 @@ class ResponseType(IntEnum):
     TYPE_INVALID = 0xff
 
 
-class EncderError(Exception):
+class EncoderError(Exception):
     pass
 
 
@@ -80,7 +81,11 @@ class SeesawEncoderResponse:
     data: int
 
     def __post_init__(self):
-        self.response_type = ResponseType(self.response_type)
+        try:
+            self.response_type = ResponseType(self.response_type)
+        except Exception as e:
+            # print(e)
+            self.responseType = ResponseType.TYPE_INVALID
 
     unpacker: ClassVar[struct.Struct] = struct.Struct('<BBh')
 
@@ -156,13 +161,20 @@ class Encoder(Seesaw):
     @property
     def count(self):
         """Retrieve or set the number of event"""
-        buf = self.readn(_ENCODER_BASE, _ENCODER_COUNT, 4)
-        d = SeesawEncoderResponse.unpack(buf)
-        if d.response_type != ResponseType.TYPE_COUNT:
-            raise EncoderError("CORRUPTED %s" % list(["%x" % x for x in buf]))
+        try:
+            buf = self.readn(_ENCODER_BASE, _ENCODER_COUNT, 4)
+            d = SeesawEncoderResponse.unpack(buf)
+            if d.response_type != ResponseType.TYPE_COUNT:
+                raise EncoderError("CORRUPTED %s" % list(["%x" % x for x in buf]))
+                return 0
+            if d.data < 0:
+                raise EncoderError("CORRUPTED %s" % list(["%x" % x for x in buf]))
+        except OSError as e:
+            # print(e)
             return 0
-        if d.data < 0:
-            raise EncoderError("CORRUPTED %s" % list(["%x" % x for x in buf]))
+        except EncoderError as e:
+            # print(e)
+            return 0
         return d.data
 
     # pylint: disable=unused-argument, no-self-use
@@ -192,6 +204,13 @@ class Encoder(Seesaw):
 
         :param int num: The number of bytes to read"""
         buf = bytearray(num * 4)
-        self.read(_ENCODER_BASE, _ENCODER_FIFO, buf)
-        return [SeesawEncoderResponse.unpack_from(buf, i * 4)
-                for i in range(0, num)]
+        try:
+            self.read(_ENCODER_BASE, _ENCODER_FIFO, buf)
+            return [SeesawEncoderResponse.unpack_from(buf, i * 4)
+                    for i in range(0, num)]
+        except OSError as e:
+            # print(e)
+            return []
+        except EncoderError as e:
+            # print(e)
+            return []
