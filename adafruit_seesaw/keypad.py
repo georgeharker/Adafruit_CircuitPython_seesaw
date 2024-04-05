@@ -62,12 +62,23 @@ class ResponseType(IntEnum):
     TYPE_INVALID = 0xff
 
 
+class KeypadError(Exception):
+    pass
+
+
 @dataclass
 class SeesawKeyResponse:
     response_type: ResponseType
     data: int
 
     unpacker: ClassVar[struct.Struct] = struct.Struct('>BB')
+
+    def __post_init__(self):
+        try:
+            self.response_type = ResponseType(self.response_type)
+        except Exception as e:
+            # print(e)
+            self.responseType = ResponseType.TYPE_INVALID
 
     @classmethod
     def unpack(cls, buf: bytearray):
@@ -133,9 +144,18 @@ class Keypad(Seesaw):
     @property
     def count(self):
         """Retrieve or set the number of keys"""
-        buf = self.readn(_KEYPAD_BASE, _KEYPAD_COUNT, 2)
-        d = SeesawKeyResponse.unpack(buf)
-        if d.response_type != ResponseType.TYPE_COUNT:
+        try:
+            buf = self.readn(_KEYPAD_BASE, _KEYPAD_COUNT, 2)
+            d = SeesawKeyResponse.unpack(buf)
+            if d.response_type != ResponseType.TYPE_COUNT:
+                raise KeypadError("CORRUPTED %s" % list(["%x" % x for x in buf]))
+            if d.data < 0:
+                raise KeypadError("CORRUPTED %s" % list(["%x" % x for x in buf]))
+        except OSError as e:
+            # print(e)
+            return 0
+        except KeypadError as e:
+            # print(e)
             return 0
         return d.data
 
@@ -169,8 +189,15 @@ class Keypad(Seesaw):
 
         :param int num: The number of bytes to read"""
         buf = bytearray(num * 2)
-        self.read(_KEYPAD_BASE, _KEYPAD_FIFO, buf)
+        try:
+            self.read(_KEYPAD_BASE, _KEYPAD_FIFO, buf)
 
-        return [SeesawKeyResponse.unpack_from(buf, i * 2)
-            for i in range(0, num)]
+            return [SeesawKeyResponse.unpack_from(buf, i * 2)
+                    for i in range(0, num)]
+        except OSError as e:
+            # print(e)
+            return []
+        except KeypadError as e:
+            # print(e)
+            return []
 

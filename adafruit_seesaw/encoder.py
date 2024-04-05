@@ -166,7 +166,6 @@ class Encoder(Seesaw):
             d = SeesawEncoderResponse.unpack(buf)
             if d.response_type != ResponseType.TYPE_COUNT:
                 raise EncoderError("CORRUPTED %s" % list(["%x" % x for x in buf]))
-                return 0
             if d.data < 0:
                 raise EncoderError("CORRUPTED %s" % list(["%x" % x for x in buf]))
         except OSError as e:
