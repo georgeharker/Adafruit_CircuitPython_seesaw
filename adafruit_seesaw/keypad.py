@@ -124,6 +124,8 @@ class Keypad(Seesaw):
     def __init__(self, i2c_bus, addr=0x49, drdy=None):
         super(Keypad, self).__init__(i2c_bus, addr, drdy)
         self._interrupt_enabled = False
+        self._tx_errors = 0
+        self._tx_count = 0
 
     @property
     def interrupt_enabled(self):
@@ -145,6 +147,7 @@ class Keypad(Seesaw):
     def count(self):
         """Retrieve or set the number of keys"""
         try:
+            self._tx_count += 1
             buf = self.readn(_KEYPAD_BASE, _KEYPAD_COUNT, 2)
             d = SeesawKeyResponse.unpack(buf)
             if d.response_type != ResponseType.TYPE_COUNT:
@@ -153,8 +156,10 @@ class Keypad(Seesaw):
                 raise KeypadError("CORRUPTED %s" % list(["%x" % x for x in buf]))
         except OSError as e:
             # print(e)
+            self._tx_errors += 1
             return 0
         except KeypadError as e:
+            self._tx_errors += 1
             # print(e)
             return 0
         return d.data
@@ -190,14 +195,17 @@ class Keypad(Seesaw):
         :param int num: The number of bytes to read"""
         buf = bytearray(num * 2)
         try:
+            self._tx_count += 1
             self.read(_KEYPAD_BASE, _KEYPAD_FIFO, buf)
 
             return [SeesawKeyResponse.unpack_from(buf, i * 2)
                     for i in range(0, num)]
         except OSError as e:
+            self._tx_errors += 1
             # print(e)
             return []
         except KeypadError as e:
+            self._tx_errors += 1
             # print(e)
             return []
 

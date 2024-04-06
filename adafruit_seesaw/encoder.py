@@ -140,6 +140,8 @@ class Encoder(Seesaw):
         super(Encoder, self).__init__(i2c_bus, addr, drdy)
         self._interrupt_enabled = False
         self._num_encoders = num_encoders
+        self._tx_errors = 0
+        self._tx_count = 0
 
     @property
     def interrupt_enabled(self):
@@ -162,6 +164,7 @@ class Encoder(Seesaw):
     def count(self):
         """Retrieve or set the number of event"""
         try:
+            self._tx_count += 1
             buf = self.readn(_ENCODER_BASE, _ENCODER_COUNT, 4)
             d = SeesawEncoderResponse.unpack(buf)
             if d.response_type != ResponseType.TYPE_COUNT:
@@ -169,9 +172,11 @@ class Encoder(Seesaw):
             if d.data < 0:
                 raise EncoderError("CORRUPTED %s" % list(["%x" % x for x in buf]))
         except OSError as e:
+            self._tx_errors += 1
             # print(e)
             return 0
         except EncoderError as e:
+            self._tx_errors += 1
             # print(e)
             return 0
         return d.data
@@ -204,12 +209,15 @@ class Encoder(Seesaw):
         :param int num: The number of bytes to read"""
         buf = bytearray(num * 4)
         try:
+            self._tx_count += 1
             self.read(_ENCODER_BASE, _ENCODER_FIFO, buf)
             return [SeesawEncoderResponse.unpack_from(buf, i * 4)
                     for i in range(0, num)]
         except OSError as e:
+            self._tx_errors += 1
             # print(e)
             return []
         except EncoderError as e:
+            self._tx_errors += 1
             # print(e)
             return []

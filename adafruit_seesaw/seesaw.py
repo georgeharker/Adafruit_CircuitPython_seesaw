@@ -433,7 +433,7 @@ class Seesaw:
         self.read(reg_base, reg, ret)
         return ret
 
-    def read(self, reg_base, reg, buf, delay=0.0006):
+    def read(self, reg_base, reg, buf, delay=0.0001):
         """Read an arbitrary I2C register range on the device"""
         self.write(reg_base, reg)
         if self._drdy is not None:
