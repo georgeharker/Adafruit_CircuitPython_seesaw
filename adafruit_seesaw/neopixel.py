@@ -83,12 +83,14 @@ class NeoPixel:
         bpp=3,
         brightness=1.0,
         auto_write=False,
-        pixel_order=None
+        pixel_order=None,
+        wr_delay=0.0001
     ):
         # TODO: brightness not yet implemented.
         self._seesaw = seesaw
         self._pin = pin
         self._bpp = bpp
+        self._wr_delay = wr_delay
         self.auto_write = auto_write
         self._n = n
         self._brightness = min(max(brightness, 0.0), 1.0)
@@ -157,7 +159,7 @@ class NeoPixel:
                 cmd[2 + self._pixel_order[3] + i * self._bpp] = w
             i += 1
 
-        self._seesaw.write(_NEOPIXEL_BASE, _NEOPIXEL_BUF, cmd)
+        self._seesaw.write(_NEOPIXEL_BASE, _NEOPIXEL_BUF, cmd, delay=self._wr_delay)
         if self.auto_write:
             self.show()
 
@@ -198,7 +200,7 @@ class NeoPixel:
         if self._bpp == 4:
             cmd[2 + self._pixel_order[3]] = w
 
-        self._seesaw.write(_NEOPIXEL_BASE, _NEOPIXEL_BUF, cmd)
+        self._seesaw.write(_NEOPIXEL_BASE, _NEOPIXEL_BUF, cmd, delay=self._wr_delay)
         if self.auto_write:
             self.show()
 
@@ -218,4 +220,4 @@ class NeoPixel:
 
     def show(self):
         """Update the pixels even if auto_write is False"""
-        self._seesaw.write(_NEOPIXEL_BASE, _NEOPIXEL_SHOW)
+        self._seesaw.write(_NEOPIXEL_BASE, _NEOPIXEL_SHOW, delay=self._wr_delay)

@@ -143,8 +143,10 @@ class Seesaw:
     INPUT_PULLUP = const(0x02)
     INPUT_PULLDOWN = const(0x03)
 
-    def __init__(self, i2c_bus, addr=0x49, drdy=None):
+    def __init__(self, i2c_bus, addr=0x49, drdy=None, rd_delay=0.008, wr_delay=0.008):
         self._drdy = drdy
+        self._rd_delay = rd_delay
+        self._wr_delay = wr_delay
         if drdy is not None:
             drdy.switch_to_input()
 
@@ -433,9 +435,10 @@ class Seesaw:
         self.read(reg_base, reg, ret)
         return ret
 
-    def read(self, reg_base, reg, buf, delay=0.0001):
+    def read(self, reg_base, reg, buf, delay=None):
         """Read an arbitrary I2C register range on the device"""
-        self.write(reg_base, reg)
+        delay = delay or self._rd_delay
+        self.write(reg_base, reg, delay=0)
         if self._drdy is not None:
             while self._drdy.value is False:
                 pass
@@ -444,8 +447,9 @@ class Seesaw:
         with self.i2c_device as i2c:
             i2c.readinto(buf)
 
-    def write(self, reg_base, reg, buf=None):
+    def write(self, reg_base, reg, buf=None, delay=None):
         """Write an arbitrary I2C register range on the device"""
+        delay = delay or self._rd_delay
         full_buffer = bytearray([reg_base, reg])
         if buf is not None:
             full_buffer += buf
@@ -455,3 +459,4 @@ class Seesaw:
                 pass
         with self.i2c_device as i2c:
             i2c.write(full_buffer)
+            time.sleep(delay)

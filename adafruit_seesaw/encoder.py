@@ -137,7 +137,8 @@ class Encoder(Seesaw):
     packer: ClassVar[struct.Struct] = struct.Struct('>I')
 
     def __init__(self, i2c_bus, addr=0x49, drdy=None, num_encoders = _NUM_ENCODERS):
-        super(Encoder, self).__init__(i2c_bus, addr, drdy)
+        super(Encoder, self).__init__(i2c_bus, addr, drdy,
+                                      rd_delay=0.0001, wr_delay=0.0001)
         self._interrupt_enabled = False
         self._num_encoders = num_encoders
         self._tx_errors = 0

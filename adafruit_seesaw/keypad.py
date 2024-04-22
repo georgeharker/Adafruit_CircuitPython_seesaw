@@ -122,7 +122,8 @@ class Keypad(Seesaw):
     EDGE_RISING = 3
 
     def __init__(self, i2c_bus, addr=0x49, drdy=None):
-        super(Keypad, self).__init__(i2c_bus, addr, drdy)
+        super(Keypad, self).__init__(i2c_bus, addr, drdy,
+                                     rd_delay=0.008, wr_delay=0.008)
         self._interrupt_enabled = False
         self._tx_errors = 0
         self._tx_count = 0
