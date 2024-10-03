@@ -12,3 +12,4 @@ dist
 ._*
 *.swp
 *.swo
+/build
