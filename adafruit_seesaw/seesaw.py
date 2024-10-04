@@ -153,10 +153,13 @@ class Seesaw:
         self.i2c_device = I2CDevice(i2c_bus, addr)
         self.sw_reset()
 
-    def sw_reset(self):
+    def sw_reset(self, new_address = None):
         """Trigger a software reset of the SeeSaw chip"""
         self.write8(_STATUS_BASE, _STATUS_SWRST, 0xFF)
         time.sleep(0.010)
+
+        if new_address != None:
+            self.i2c_device.device_address = addr
 
         chip_id = self.read8(_STATUS_BASE, _STATUS_HW_ID)
 
@@ -395,8 +398,7 @@ class Seesaw:
         """Store a new address in the device's EEPROM and reboot it."""
         self.eeprom_write8(_EEPROM_I2C_ADDR, addr)
         time.sleep(0.250)
-        self.i2c_device.device_address = addr
-        self.sw_reset()
+        self.sw_reset(addr)
 
     def get_i2c_addr(self):
         """Return the device's I2C address stored in its EEPROM"""
