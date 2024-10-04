@@ -159,7 +159,7 @@ class Seesaw:
         time.sleep(0.010)
 
         if new_address != None:
-            self.i2c_device.device_address = addr
+            self.i2c_device.device_address = new_address
 
         chip_id = self.read8(_STATUS_BASE, _STATUS_HW_ID)
 
