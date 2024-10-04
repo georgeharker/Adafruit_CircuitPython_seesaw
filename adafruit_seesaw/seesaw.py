@@ -395,8 +395,8 @@ class Seesaw:
         """Store a new address in the device's EEPROM and reboot it."""
         self.eeprom_write8(_EEPROM_I2C_ADDR, addr)
         time.sleep(0.250)
-        self.sw_reset()
         self.i2c_device.device_address = addr
+        self.sw_reset()
 
     def get_i2c_addr(self):
         """Return the device's I2C address stored in its EEPROM"""
