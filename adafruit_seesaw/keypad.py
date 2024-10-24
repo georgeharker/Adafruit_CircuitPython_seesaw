@@ -93,12 +93,15 @@ class SeesawKeyResponse:
 
 
 # pylint: disable=too-few-public-methods
+@dataclass
 class KeyEvent:
     """Holds information about a key event in its properties
 
        :param int num: The number of the key
        :param int edge: One of the EDGE propertes of `adafruit_seesaw.keypad.Keypad`
     """
+    number: int
+    edge: int
 
     def __init__(self, num:int, edge:int):
         self.number = int(num)
