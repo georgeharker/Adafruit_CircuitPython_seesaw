@@ -29,7 +29,7 @@
 import struct
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import ClassVar
+from typing import ClassVar, List
 
 try:
     from micropython import const
@@ -88,6 +88,9 @@ class SeesawKeyResponse:
     def unpack_from(cls, buf: bytearray, frm: int):
         return SeesawKeyResponse(*cls.unpacker.unpack_from(buf, frm))
 
+    def data_edge_num(self):
+        return self.data & 0x02, (self.data >> 2) & 0x3f
+
 
 # pylint: disable=too-few-public-methods
 class KeyEvent:
@@ -97,7 +100,7 @@ class KeyEvent:
        :param int edge: One of the EDGE propertes of `adafruit_seesaw.keypad.Keypad`
     """
 
-    def __init__(self, num, edge):
+    def __init__(self, num:int, edge:int):
         self.number = int(num)
         self.edge = int(edge)
 
@@ -121,7 +124,7 @@ class Keypad(Seesaw):
     #: Indicates that the key was recently released
     EDGE_RISING = 3
 
-    def __init__(self, i2c_bus, addr=0x49, drdy=None):
+    def __init__(self, i2c_bus, addr:int=0x49, drdy:bool=None):
         super(Keypad, self).__init__(i2c_bus, addr, drdy,
                                      rd_delay=0.008, wr_delay=0.008)
         self._interrupt_enabled = False
@@ -129,12 +132,12 @@ class Keypad(Seesaw):
         self._tx_count = 0
 
     @property
-    def interrupt_enabled(self):
+    def interrupt_enabled(self) -> bool:
         """Retrieve or set the interrupt enable flag"""
         return self._interrupt_enabled
 
     @interrupt_enabled.setter
-    def interrupt_enabled(self, value):
+    def interrupt_enabled(self, value: bool):
         if value not in (True, False):
             raise ValueError("interrupt_enabled must be True or False")
 
@@ -145,7 +148,7 @@ class Keypad(Seesaw):
             self.write8(_KEYPAD_BASE, _KEYPAD_INTENCLR, 1)
 
     @property
-    def count(self):
+    def count(self) -> int:
         """Retrieve or set the number of keys"""
         try:
             self._tx_count += 1
@@ -171,8 +174,7 @@ class Keypad(Seesaw):
         raise AttributeError("count is read only")
 
     # pylint: enable=unused-argument, no-self-use
-
-    def set_event(self, key, edge, enable):
+    def set_event(self, key:int, edge:int, enable:bool) -> None:
         """Control which kinds of events are set
 
            :param int key: The key number
@@ -190,10 +192,11 @@ class Keypad(Seesaw):
 
         self.write(_KEYPAD_BASE, _KEYPAD_EVENT, cmd)
 
-    def read_keypad(self, num):
+    def read_keypad(self, num = None) -> List[KeyEvent]:
         """Read data from the keypad
-
         :param int num: The number of bytes to read"""
+        if num is None:
+            num = self.count
         buf = bytearray(num * 2)
         try:
             self._tx_count += 1
