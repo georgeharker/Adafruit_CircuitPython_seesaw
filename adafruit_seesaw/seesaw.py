@@ -180,11 +180,11 @@ class Seesaw:
         elif pid == _ROBOHATMM1_PID:
             from adafruit_seesaw.robohat import MM1_Pinmap
 
-            self.pin_mapping = MM1_Pinmap
+            self.pin_mapping = MM1_Pinmap  # type: ignore
         else:
             from adafruit_seesaw.samd09 import SAMD09_Pinmap
 
-            self.pin_mapping = SAMD09_Pinmap
+            self.pin_mapping = SAMD09_Pinmap  # type: ignore
         # pylint: enable=import-outside-toplevel
 
     def get_options(self):

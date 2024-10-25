@@ -34,7 +34,7 @@ from .seesaw import Seesaw
 try:
     import struct
 except ImportError:
-    import ustruct as struct
+    import ustruct as struct  # type: ignore
 try:
     from micropython import const
 except ImportError:
@@ -66,6 +66,11 @@ GRBW = (1, 0, 2, 3)
 """Green Red Blue White"""
 
 
+PixelType3 = Tuple[int, int, int]
+PixelType4 = Tuple[int, int, int, int]
+PixelType = Union[PixelType3, PixelType4]
+
+
 class NeoPixel:
     """Control NeoPixels connected to a seesaw
 
@@ -85,7 +90,7 @@ class NeoPixel:
     auto_write: bool
     _n: int
     _brightness: float
-    _pixel_order: Union[Tuple[int, int, int], Tuple[int, int, int, int]]
+    _pixel_order: PixelType
 
     def __init__(
         self,
@@ -96,7 +101,7 @@ class NeoPixel:
         bpp: int = 3,
         brightness: float = 1.0,
         auto_write: bool = False,
-        pixel_order: Optional[Union[Tuple[int, int, int], Tuple[int, int, int, int]]] = None,
+        pixel_order: Optional[PixelType] = None,
         wr_delay: float = 0.0001
     ):
         # TODO: brightness not yet implemented.
@@ -116,12 +121,12 @@ class NeoPixel:
         self._seesaw.write(_NEOPIXEL_BASE, _NEOPIXEL_BUF_LENGTH, cmd2)
 
     @property
-    def brightness(self):
+    def brightness(self) -> float:
         """Overall brightness of the pixel"""
         return self._brightness
 
     @brightness.setter
-    def brightness(self, brightness):
+    def brightness(self, brightness: float):
         # pylint: disable=attribute-defined-outside-init
         self._brightness = min(max(brightness, 0.0), 1.0)
         if self.auto_write:
@@ -170,7 +175,7 @@ class NeoPixel:
             cmd[2 + self._pixel_order[1] + i * self._bpp] = g
             cmd[2 + self._pixel_order[2] + i * self._bpp] = b
             if self._bpp == 4:
-                cmd[2 + cast(Tuple[int, int, int, int], self._pixel_order)[3] + i * self._bpp] = w
+                cmd[2 + cast(PixelType4, self._pixel_order)[3] + i * self._bpp] = w
             i += 1
 
         self._seesaw.write(_NEOPIXEL_BASE, _NEOPIXEL_BUF, cmd, delay=self._wr_delay)
@@ -212,7 +217,7 @@ class NeoPixel:
         cmd[2 + self._pixel_order[1]] = g
         cmd[2 + self._pixel_order[2]] = b
         if self._bpp == 4:
-            cmd[2 + cast(Tuple[int, int, int, int], self._pixel_order)[3]] = w
+            cmd[2 + cast(PixelType4, self._pixel_order)[3]] = w
 
         self._seesaw.write(_NEOPIXEL_BASE, _NEOPIXEL_BUF, cmd, delay=self._wr_delay)
         if self.auto_write:
