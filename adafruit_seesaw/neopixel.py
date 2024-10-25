@@ -26,6 +26,11 @@
 ====================================================
 """
 
+from typing import Optional, Tuple, Union, cast
+
+from .seesaw import Seesaw
+
+
 try:
     import struct
 except ImportError:
@@ -73,18 +78,26 @@ class NeoPixel:
     :param tuple pixel_order: The layout of the pixels.
         Use one of the order constants such as RGBW.
 """
+    _seesaw: Seesaw
+    _pin: int
+    _bpp: int
+    _wr_delay: float
+    auto_write: bool
+    _n: int
+    _brightness: float
+    _pixel_order: Union[Tuple[int, int, int], Tuple[int, int, int, int]]
 
     def __init__(
         self,
-        seesaw,
-        pin,
-        n,
+        seesaw: Seesaw,
+        pin: int,
+        n: int,
         *,
-        bpp=3,
-        brightness=1.0,
-        auto_write=False,
-        pixel_order=None,
-        wr_delay=0.0001
+        bpp: int = 3,
+        brightness: float = 1.0,
+        auto_write: bool = False,
+        pixel_order: Optional[Union[Tuple[int, int, int], Tuple[int, int, int, int]]] = None,
+        wr_delay: float = 0.0001
     ):
         # TODO: brightness not yet implemented.
         self._seesaw = seesaw
@@ -95,11 +108,12 @@ class NeoPixel:
         self._n = n
         self._brightness = min(max(brightness, 0.0), 1.0)
         self._pixel_order = GRBW if pixel_order is None else pixel_order
+        assert len(self._pixel_order) == self._bpp
 
         cmd = bytearray([pin])
         self._seesaw.write(_NEOPIXEL_BASE, _NEOPIXEL_PIN, cmd)
-        cmd = struct.pack(">H", n * self._bpp)
-        self._seesaw.write(_NEOPIXEL_BASE, _NEOPIXEL_BUF_LENGTH, cmd)
+        cmd2 = struct.pack(">H", n * self._bpp)
+        self._seesaw.write(_NEOPIXEL_BASE, _NEOPIXEL_BUF_LENGTH, cmd2)
 
     @property
     def brightness(self):
@@ -156,7 +170,7 @@ class NeoPixel:
             cmd[2 + self._pixel_order[1] + i * self._bpp] = g
             cmd[2 + self._pixel_order[2] + i * self._bpp] = b
             if self._bpp == 4:
-                cmd[2 + self._pixel_order[3] + i * self._bpp] = w
+                cmd[2 + cast(Tuple[int, int, int, int], self._pixel_order)[3] + i * self._bpp] = w
             i += 1
 
         self._seesaw.write(_NEOPIXEL_BASE, _NEOPIXEL_BUF, cmd, delay=self._wr_delay)
@@ -198,7 +212,7 @@ class NeoPixel:
         cmd[2 + self._pixel_order[1]] = g
         cmd[2 + self._pixel_order[2]] = b
         if self._bpp == 4:
-            cmd[2 + self._pixel_order[3]] = w
+            cmd[2 + cast(Tuple[int, int, int, int], self._pixel_order)[3]] = w
 
         self._seesaw.write(_NEOPIXEL_BASE, _NEOPIXEL_BUF, cmd, delay=self._wr_delay)
         if self.auto_write:

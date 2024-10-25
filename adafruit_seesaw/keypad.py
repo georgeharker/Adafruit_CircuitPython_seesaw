@@ -127,7 +127,7 @@ class Keypad(Seesaw):
     #: Indicates that the key was recently released
     EDGE_RISING = 3
 
-    def __init__(self, i2c_bus, addr:int=0x49, drdy:bool=None):
+    def __init__(self, i2c_bus, addr: int = 0x49, drdy=None):
         super(Keypad, self).__init__(i2c_bus, addr, drdy,
                                      rd_delay=0.008, wr_delay=0.008)
         self._interrupt_enabled = False
@@ -177,7 +177,7 @@ class Keypad(Seesaw):
         raise AttributeError("count is read only")
 
     # pylint: enable=unused-argument, no-self-use
-    def set_event(self, key:int, edge:int, enable:bool) -> None:
+    def set_event(self, key: int, edge: int, enable: bool) -> None:
         """Control which kinds of events are set
 
            :param int key: The key number
@@ -195,7 +195,7 @@ class Keypad(Seesaw):
 
         self.write(_KEYPAD_BASE, _KEYPAD_EVENT, cmd)
 
-    def read_keypad(self, num = None) -> List[KeyEvent]:
+    def read_keypad(self, num = None) -> List[SeesawKeyResponse]:
         """Read data from the keypad
         :param int num: The number of bytes to read"""
         if num is None:
