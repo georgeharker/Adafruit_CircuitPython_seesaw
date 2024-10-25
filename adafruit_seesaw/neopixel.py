@@ -26,7 +26,7 @@
 ====================================================
 """
 
-from typing import Optional, Tuple, Union, cast
+from typing import Optional, Sequence, Tuple, Union, cast
 
 from .seesaw import Seesaw
 
@@ -104,7 +104,6 @@ class NeoPixel:
         pixel_order: Optional[PixelType] = None,
         wr_delay: float = 0.0001
     ):
-        # TODO: brightness not yet implemented.
         self._seesaw = seesaw
         self._pin = pin
         self._bpp = bpp
@@ -138,7 +137,7 @@ class NeoPixel:
     def __len__(self):
         return self._n
 
-    def setbuf(self, colors):
+    def setbuf(self, colors: Sequence[PixelType]):
         """Set one pixel to a new value"""
         cmd = bytearray(2 + self._bpp * len(colors))
         struct.pack_into(">H", cmd, 0, 0)
@@ -151,9 +150,9 @@ class NeoPixel:
                 b = color & 0xff
             else:
                 if self._bpp == 3:
-                    r, g, b = color
+                    r, g, b = cast(PixelType3, color)
                 else:
-                    r, g, b, w = color
+                    r, g, b, w = cast(PixelType4, color)
 
             # if all components are the same and we have a white pixel then use it
             # instead of the individual components.
