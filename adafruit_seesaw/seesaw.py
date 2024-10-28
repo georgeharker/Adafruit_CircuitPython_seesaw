@@ -132,6 +132,12 @@ _EEPROM_I2C_ADDR = const(0x3F)
 _CRICKIT_PID = const(9999)
 _ROBOHATMM1_PID = const(9998)
 
+DEFAULT_RD_DELAY = const(0.008)
+DEFAULT_WR_DELAY = const(0.008)
+SWRST_DELAY = const(0.01)
+ANALOG_RD_DELAY = const(0.001)
+ANALOG_WR_DELAY = const(0.001)
+I2C_ADDR_DELAY = const(0.25)
 
 class Seesaw:
     """Driver for Seesaw i2c generic conversion trip
@@ -145,7 +151,8 @@ class Seesaw:
     INPUT_PULLUP = const(0x02)
     INPUT_PULLDOWN = const(0x03)
 
-    def __init__(self, i2c_bus, addr=0x49, drdy=None, rd_delay=0.008, wr_delay=0.008):
+    def __init__(self, i2c_bus, addr=0x49, drdy=None,
+                 rd_delay=DEFAULT_RD_DELAY, wr_delay=DEFAULT_WR_DELAY):
         self._drdy = drdy
         self._rd_delay = rd_delay
         self._wr_delay = wr_delay
@@ -158,7 +165,7 @@ class Seesaw:
     def sw_reset(self, new_address = None):
         """Trigger a software reset of the SeeSaw chip"""
         self.write8(_STATUS_BASE, _STATUS_SWRST, 0xFF)
-        time.sleep(0.010)
+        time.sleep(SWRST_DELAY)
 
         if new_address != None:
             self.i2c_device.device_address = new_address
@@ -258,7 +265,7 @@ class Seesaw:
             buf,
         )
         ret = struct.unpack(">H", buf)[0]
-        time.sleep(0.001)
+        time.sleep(ANALOG_RD_DELAY)
         return ret
 
     def touch_read(self, pin):
@@ -282,14 +289,14 @@ class Seesaw:
 
         self.read(_TOUCH_BASE, _TOUCH_CHANNEL_OFFSET, buf, 0.005)
         ret = struct.unpack(">H", buf)[0]
-        time.sleep(0.001)
+        time.sleep(ANALOG_RD_DELAY)
 
         # retry if reading was bad
         count = 0
         while ret > 4095:
             self.read(_TOUCH_BASE, _TOUCH_CHANNEL_OFFSET, buf, 0.005)
             ret = struct.unpack(">H", buf)[0]
-            time.sleep(0.001)
+            time.sleep(ANALOG_RD_DELAY)
             count += 1
             if count > 3:
                 raise RuntimeError("Could not get a valid moisture reading.")
@@ -360,7 +367,7 @@ class Seesaw:
         if pin_found is False:
             raise ValueError("Invalid PWM pin")
         self.write(_TIMER_BASE, _TIMER_PWM, cmd)
-        time.sleep(0.001)
+        time.sleep(ANALOG_WR_DELAY)
 
     def get_temp(self):
         """Read the temperature"""
@@ -399,7 +406,7 @@ class Seesaw:
     def set_i2c_addr(self, addr):
         """Store a new address in the device's EEPROM and reboot it."""
         self.eeprom_write8(_EEPROM_I2C_ADDR, addr)
-        time.sleep(0.250)
+        time.sleep(I2C_ADDR_DELAY)
         self.sw_reset(addr)
 
     def get_i2c_addr(self):

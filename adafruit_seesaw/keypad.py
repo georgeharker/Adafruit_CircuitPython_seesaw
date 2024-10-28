@@ -55,6 +55,9 @@ _KEYPAD_INTENCLR = const(0x03)
 _KEYPAD_COUNT = const(0x04)
 _KEYPAD_FIFO = const(0x10)
 
+DEFAULT_RD_DELAY = const(0.008)
+DEFAULT_WR_DELAY = const(0.008)
+
 
 class ResponseType(IntEnum):
     # Types for the repsonse
@@ -131,7 +134,8 @@ class Keypad(Seesaw):
 
     def __init__(self, i2c_bus, addr: int = 0x49, drdy=None):
         super(Keypad, self).__init__(i2c_bus, addr, drdy,
-                                     rd_delay=0.008, wr_delay=0.008)
+                                     rd_delay=DEFAULT_RD_DELAY,
+                                     wr_delay=DEFAULT_WR_DELAY)
         self._interrupt_enabled = False
         self._tx_errors = 0
         self._tx_count = 0
