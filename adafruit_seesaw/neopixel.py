@@ -112,7 +112,7 @@ class NeoPixel:
         self._n = n
         self._brightness = min(max(brightness, 0.0), 1.0)
         self._pixel_order = GRBW if pixel_order is None else pixel_order
-        assert len(self._pixel_order) == self._bpp
+        assert len(self._pixel_order) > self._bpp
 
         cmd = bytearray([pin])
         self._seesaw.write(_NEOPIXEL_BASE, _NEOPIXEL_PIN, cmd)
