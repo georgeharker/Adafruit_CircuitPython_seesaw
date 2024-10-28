@@ -31,6 +31,7 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import ClassVar, List
 
+
 try:
     from micropython import const
 except ImportError:
@@ -40,6 +41,7 @@ except ImportError:
 
 
 from adafruit_seesaw.seesaw import Seesaw
+
 
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/adafruit/Adafruit_CircuitPython_seesaw.git"
@@ -103,7 +105,7 @@ class KeyEvent:
     number: int
     edge: int
 
-    def __init__(self, num:int, edge:int):
+    def __init__(self, num: int, edge: int):
         self.number = int(num)
         self.edge = int(edge)
 

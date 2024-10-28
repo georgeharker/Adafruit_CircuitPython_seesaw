@@ -48,10 +48,11 @@ Implementation Notes
 
 import time
 
+
 try:
     import struct
 except ImportError:
-    import ustruct as struct
+    import ustruct as struct  # type: ignore
 try:
     from micropython import const
 except ImportError:
@@ -61,6 +62,7 @@ except ImportError:
 
 
 from adafruit_bus_device.i2c_device import I2CDevice
+
 
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/adafruit/Adafruit_CircuitPython_seesaw.git"
