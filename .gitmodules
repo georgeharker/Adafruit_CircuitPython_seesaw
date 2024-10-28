@@ -1,0 +1,2 @@
+[submodule "submodules/Adafruit_CircuitPython_seesaw"]
+	update = rebase
