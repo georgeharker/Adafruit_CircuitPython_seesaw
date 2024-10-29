@@ -54,6 +54,7 @@ _NEOPIXEL_SPEED = const(0x02)
 _NEOPIXEL_BUF_LENGTH = const(0x03)
 _NEOPIXEL_BUF = const(0x04)
 _NEOPIXEL_SHOW = const(0x05)
+_NEOPIXEL_PARTIAL_BUF = const(0x06)
 
 # Pixel color order constants
 RGB = (0, 1, 2)
@@ -140,66 +141,20 @@ class NeoPixel:
     def __len__(self):
         return self._n
 
-    def setbuf(self, colors: Sequence[ColorType]):
-        """Set one pixel to a new value"""
-        cmd = bytearray(2 + self._bpp * len(colors))
-        struct.pack_into(">H", cmd, 0, 0)
-        i = 0
-        for color in colors:
-            if isinstance(color, int):
-                w = color >> 24
-                r = (color >> 16) & 0xff
-                g = (color >> 8) & 0xff
-                b = color & 0xff
-            else:
-                if self._bpp == 3:
-                    r, g, b = cast(ColorType3, color)
-                else:
-                    r, g, b, w = cast(ColorType4, color)
-
-            # if all components are the same and we have a white pixel then use it
-            # instead of the individual components.
-            if self._bpp == 4 and r == g == b and w == 0:
-                w = r
-                r = 0
-                g = 0
-                b = 0
-
-            if self.brightness < 0.99:
-                r = int(r * self.brightness)
-                g = int(g * self.brightness)
-                b = int(b * self.brightness)
-                if self._bpp == 4:
-                    w = int(w * self.brightness)
-
-            # store colors in correct slots
-            cmd[2 + self._pixel_order[0] + i * self._bpp] = r
-            cmd[2 + self._pixel_order[1] + i * self._bpp] = g
-            cmd[2 + self._pixel_order[2] + i * self._bpp] = b
-            if self._bpp == 4:
-                cmd[2 + cast(PixelType4, self._pixel_order)[3] + i * self._bpp] = w
-            i += 1
-
-        self._seesaw.write(_NEOPIXEL_BASE, _NEOPIXEL_BUF, cmd, delay=self._wr_delay)
-        if self.auto_write:
-            self.show()
-
-    def __setitem__(self, key: int, color: ColorType):
-        """Set one pixel to a new value"""
-        cmd = bytearray(2 + self._bpp)
-        struct.pack_into(">H", cmd, 0, key * self._bpp)
+    def _color_to_components(self, color: ColorType) -> Tuple[int, int, int, int]:
+        r = g = b = w = 0
         if isinstance(color, int):
             w = color >> 24
-            r = (color >> 16) & 0xFF
-            g = (color >> 8) & 0xFF
-            b = color & 0xFF
+            r = (color >> 16) & 0xff
+            g = (color >> 8) & 0xff
+            b = color & 0xff
         else:
             if self._bpp == 3:
                 r, g, b = cast(ColorType3, color)
             else:
                 r, g, b, w = cast(ColorType4, color)
 
-        # If all components are the same and we have a white pixel then use it
+        # if all components are the same and we have a white pixel then use it
         # instead of the individual components.
         if self._bpp == 4 and r == g == b and w == 0:
             w = r
@@ -213,6 +168,56 @@ class NeoPixel:
             b = int(b * self.brightness)
             if self._bpp == 4:
                 w = int(w * self.brightness)
+        return r, g, b, w
+
+    def setbuf(self, colors: Sequence[ColorType]):
+        """Set all pixels to a new value"""
+        cmd = bytearray(2 + self._bpp * len(colors))
+        struct.pack_into(">H", cmd, 0, 0)
+        i = 0
+        for color in colors:
+            r, g, b, w = self._color_to_components(color)
+
+            # store colors in correct slots
+            cmd[2 + self._pixel_order[0] + i * self._bpp] = r
+            cmd[2 + self._pixel_order[1] + i * self._bpp] = g
+            cmd[2 + self._pixel_order[2] + i * self._bpp] = b
+            if self._bpp == 4:
+                cmd[2 + cast(PixelType4, self._pixel_order)[3] + i * self._bpp] = w
+            i += 1
+
+        self._seesaw.write(_NEOPIXEL_BASE, _NEOPIXEL_BUF, cmd, delay=self._wr_delay)
+        if self.auto_write:
+            self.show()
+
+    def update(self, updates: Sequence[Tuple[int, ColorType]]):
+        """Set all pixels to a new value"""
+        stride = self._bpp + 1
+        cmd = bytearray(1 + stride * len(updates))
+        cmd[0] = self._bpp
+        i = 0
+        for key, color in updates:
+            r, g, b, w = self._color_to_components(color)
+
+            # store colors in correct slots
+            cmd[1 + i * stride] = key
+            cmd[2 + self._pixel_order[0] + i * stride] = r
+            cmd[2 + self._pixel_order[1] + i * stride] = g
+            cmd[2 + self._pixel_order[2] + i * stride] = b
+            if self._bpp == 4:
+                cmd[2 + cast(PixelType4, self._pixel_order)[3] + i * stride] = w
+            i += 1
+
+        self._seesaw.write(_NEOPIXEL_BASE, _NEOPIXEL_PARTIAL_BUF, cmd, delay=self._wr_delay)
+        if self.auto_write:
+            self.show()
+
+    def __setitem__(self, key: int, color: ColorType):
+        """Set one pixel to a new value"""
+        cmd = bytearray(2 + self._bpp)
+        struct.pack_into(">H", cmd, 0, key * self._bpp)
+
+        r, g, b, w = self._color_to_components(color)
 
         # Store colors in correct slots
         cmd[2 + self._pixel_order[0]] = r
