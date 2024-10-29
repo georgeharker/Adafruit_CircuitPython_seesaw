@@ -70,6 +70,9 @@ PixelType3 = Tuple[int, int, int]
 PixelType4 = Tuple[int, int, int, int]
 PixelType = Union[PixelType3, PixelType4]
 
+ColorType3 = Tuple[float, float, float]
+ColorType4 = Tuple[float, float, float, float]
+ColorType = Union[ColorType3, ColorType4, int]
 
 class NeoPixel:
     """Control NeoPixels connected to a seesaw
@@ -137,7 +140,7 @@ class NeoPixel:
     def __len__(self):
         return self._n
 
-    def setbuf(self, colors: Sequence[PixelType]):
+    def setbuf(self, colors: Sequence[ColorType]):
         """Set one pixel to a new value"""
         cmd = bytearray(2 + self._bpp * len(colors))
         struct.pack_into(">H", cmd, 0, 0)
@@ -150,9 +153,9 @@ class NeoPixel:
                 b = color & 0xff
             else:
                 if self._bpp == 3:
-                    r, g, b = cast(PixelType3, color)
+                    r, g, b = cast(ColorType3, color)
                 else:
-                    r, g, b, w = cast(PixelType4, color)
+                    r, g, b, w = cast(ColorType4, color)
 
             # if all components are the same and we have a white pixel then use it
             # instead of the individual components.
@@ -181,7 +184,7 @@ class NeoPixel:
         if self.auto_write:
             self.show()
 
-    def __setitem__(self, key, color):
+    def __setitem__(self, key: int, color: ColorType):
         """Set one pixel to a new value"""
         cmd = bytearray(2 + self._bpp)
         struct.pack_into(">H", cmd, 0, key * self._bpp)
@@ -192,9 +195,9 @@ class NeoPixel:
             b = color & 0xFF
         else:
             if self._bpp == 3:
-                r, g, b = color
+                r, g, b = cast(ColorType3, color)
             else:
-                r, g, b, w = color
+                r, g, b, w = cast(ColorType4, color)
 
         # If all components are the same and we have a white pixel then use it
         # instead of the individual components.
