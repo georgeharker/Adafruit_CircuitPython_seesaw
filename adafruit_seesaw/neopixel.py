@@ -142,7 +142,7 @@ class NeoPixel:
         return self._n
 
     def _color_to_components(self, color: ColorType) -> Tuple[int, int, int, int]:
-        r = g = b = w = 0
+        r = g = b = w = 0.0
         if isinstance(color, int):
             w = color >> 24
             r = (color >> 16) & 0xff
@@ -168,9 +168,9 @@ class NeoPixel:
             b = int(b * self.brightness)
             if self._bpp == 4:
                 w = int(w * self.brightness)
-        return r, g, b, w
+        return cast(int, r), cast(int, g), cast(int, b), cast(int, w)
 
-    def setbuf(self, colors: Sequence[ColorType]):
+    def setbuf(self, colors: Sequence[ColorType]) -> None:
         """Set all pixels to a new value"""
         cmd = bytearray(2 + self._bpp * len(colors))
         struct.pack_into(">H", cmd, 0, 0)
@@ -190,7 +190,7 @@ class NeoPixel:
         if self.auto_write:
             self.show()
 
-    def update(self, updates: Sequence[Tuple[int, ColorType]]):
+    def update(self, updates: Sequence[Tuple[int, ColorType]]) -> None:
         """Set all pixels to a new value"""
         stride = self._bpp + 1
         cmd = bytearray(1 + stride * len(updates))
@@ -233,7 +233,7 @@ class NeoPixel:
     def __getitem__(self, key):
         pass
 
-    def fill(self, color):
+    def fill(self, color) -> None:
         """Set all pixels to the same value"""
         # Suppress auto_write while filling.
         current_auto_write = self.auto_write
@@ -244,6 +244,6 @@ class NeoPixel:
             self.show()
         self.auto_write = current_auto_write
 
-    def show(self):
+    def show(self) -> None:
         """Update the pixels even if auto_write is False"""
         self._seesaw.write(_NEOPIXEL_BASE, _NEOPIXEL_SHOW, delay=self._wr_delay)
