@@ -139,6 +139,7 @@ ANALOG_RD_DELAY = const(0.001)
 ANALOG_WR_DELAY = const(0.001)
 I2C_ADDR_DELAY = const(0.25)
 
+
 class Seesaw:
     """Driver for Seesaw i2c generic conversion trip
 
@@ -167,7 +168,7 @@ class Seesaw:
         self.write8(_STATUS_BASE, _STATUS_SWRST, 0xFF)
         time.sleep(SWRST_DELAY)
 
-        if new_address != None:
+        if new_address is not None:
             self.i2c_device.device_address = new_address
 
         chip_id = self.read8(_STATUS_BASE, _STATUS_HW_ID)

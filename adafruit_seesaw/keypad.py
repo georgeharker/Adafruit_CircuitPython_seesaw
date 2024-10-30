@@ -71,6 +71,28 @@ class KeypadError(Exception):
     pass
 
 
+class KeypadEdge(IntEnum):
+    #: Indicates that the key is currently pressed
+    EDGE_HIGH = 0
+    #: Indicates that the key is currently released
+    EDGE_LOW = 1
+    #: Indicates that the key was recently pressed
+    EDGE_FALLING = 2
+    #: Indicates that the key was recently released
+    EDGE_RISING = 3
+
+
+@dataclass
+class KeyEvent:
+    """Holds information about a key event in its properties
+
+       :param int num: The number of the key
+       :param int edge: One of the EDGE propertes of `KeypadEdge`
+    """
+    number: int
+    edge: KeypadEdge
+
+
 @dataclass
 class SeesawKeyResponse:
     response_type: ResponseType
@@ -81,7 +103,7 @@ class SeesawKeyResponse:
     def __post_init__(self):
         try:
             self.response_type = ResponseType(self.response_type)
-        except Exception as e:
+        except Exception as e:  # noqa: F841
             # print(e)
             self.responseType = ResponseType.TYPE_INVALID
 
@@ -93,27 +115,8 @@ class SeesawKeyResponse:
     def unpack_from(cls, buf: bytearray, frm: int):
         return SeesawKeyResponse(*cls.unpacker.unpack_from(buf, frm))
 
-    def data_edge_num(self):
-        return self.data & 0x02, (self.data >> 2) & 0x3f
-
-
-# pylint: disable=too-few-public-methods
-@dataclass
-class KeyEvent:
-    """Holds information about a key event in its properties
-
-       :param int num: The number of the key
-       :param int edge: One of the EDGE propertes of `adafruit_seesaw.keypad.Keypad`
-    """
-    number: int
-    edge: int
-
-    def __init__(self, num: int, edge: int):
-        self.number = int(num)
-        self.edge = int(edge)
-
-
-# pylint: enable=too-few-public-methods
+    def data_keyevent(self) -> KeyEvent:
+        return KeyEvent((self.data >> 2) & 0x3f, KeypadEdge(self.data & 0x02))
 
 
 class Keypad(Seesaw):
@@ -122,15 +125,6 @@ class Keypad(Seesaw):
        :param ~busio.I2C i2c_bus: Bus the SeeSaw is connected to
        :param int addr: I2C address of the SeeSaw device
        :param ~digitalio.DigitalInOut drdy: Pin connected to SeeSaw's 'ready' output"""
-
-    #: Indicates that the key is currently pressed
-    EDGE_HIGH = 0
-    #: Indicates that the key is currently released
-    EDGE_LOW = 1
-    #: Indicates that the key was recently pressed
-    EDGE_FALLING = 2
-    #: Indicates that the key was recently released
-    EDGE_RISING = 3
 
     def __init__(self, i2c_bus, addr: int = 0x49, drdy=None):
         super(Keypad, self).__init__(i2c_bus, addr, drdy,
@@ -167,11 +161,11 @@ class Keypad(Seesaw):
                 raise KeypadError("CORRUPTED %s" % list(["%x" % x for x in buf]))
             if d.data < 0:
                 raise KeypadError("CORRUPTED %s" % list(["%x" % x for x in buf]))
-        except OSError as e:
+        except OSError as e:  # noqa: F841
             # print(e)
             self._tx_errors += 1
             return 0
-        except KeypadError as e:
+        except KeypadError as e:  # noqa: F841
             self._tx_errors += 1
             # print(e)
             return 0
@@ -213,11 +207,11 @@ class Keypad(Seesaw):
 
             return [SeesawKeyResponse.unpack_from(buf, i * 2)
                     for i in range(0, num)]
-        except OSError as e:
+        except OSError as e:  # noqa: F841
             self._tx_errors += 1
             # print(e)
             return []
-        except KeypadError as e:
+        except KeypadError as e:  # noqa: F841
             self._tx_errors += 1
             # print(e)
             return []
