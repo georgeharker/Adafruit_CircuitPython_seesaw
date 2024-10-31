@@ -98,7 +98,7 @@ class SeesawKeyResponse:
     response_type: ResponseType
     data: int
 
-    unpacker: ClassVar[struct.Struct] = struct.Struct('>BB')
+    unpacker: ClassVar[struct.Struct] = struct.Struct('<BB')
 
     def __post_init__(self):
         try:

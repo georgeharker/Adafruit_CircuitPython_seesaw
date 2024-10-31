@@ -138,7 +138,7 @@ class SeesawEncoderResponse:
             # print(e)
             self.responseType = ResponseType.TYPE_INVALID
 
-    unpacker: ClassVar[struct.Struct] = struct.Struct('>BBh')
+    unpacker: ClassVar[struct.Struct] = struct.Struct('<BBh')
 
     @classmethod
     def unpack(cls, buf: bytearray):
