@@ -29,7 +29,7 @@
 import struct
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import ClassVar, List, NamedTuple
+from typing import ClassVar, List
 
 
 try:
@@ -120,6 +120,8 @@ class EncoderEvent:
        :param int num: The number of the encoder
        :param int edge: One of the EDGE propertes of `EncoderEdge`
     """
+    number: int
+    edge: int
 
 # pylint: enable=too-few-public-methods
 
