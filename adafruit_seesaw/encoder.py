@@ -89,13 +89,6 @@ class EncoderEdge(IntEnum):
     DELTA = 5
 
 
-class EventType(IntEnum):
-    # Types for the event
-    TYPE_VALUE = 0,
-    TYPE_DELTA = 1,
-    TYPE_PRESS = 2,
-
-
 @dataclass
 class EncoderEvent:
     """Holds information about an encoder event in its properties
