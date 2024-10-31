@@ -89,6 +89,49 @@ class EncoderEdge(IntEnum):
     DELTA = 5
 
 
+class EventType(IntEnum):
+    # Types for the event
+    TYPE_VALUE = 0,
+    TYPE_DELTA = 1,
+    TYPE_PRESS = 2,
+
+
+@dataclass
+class EncoderEvent:
+    """Holds information about an encoder event in its properties
+
+       :param int num: The number of the encoder
+    """
+    number: int
+
+
+@dataclass
+class EncoderPressEvent(EncoderEvent):
+    """Holds information about an encoder value event in its properties
+
+       :param int edge: One of the EDGE propertes of `EncoderEdge`
+    """
+    edge: int
+
+
+@dataclass
+class EncoderValueEvent(EncoderEvent):
+    """Holds information about an encoder value event in its properties
+
+       :param int value: The value of the encoder
+    """
+    value: int
+
+
+@dataclass
+class EncoderDeltaEvent(EncoderEvent):
+    """Holds information about an encoder event in its properties
+
+       :param int delta: The delta of the encoder
+    """
+    delta: int
+
+
 @dataclass
 class SeesawEncoderResponse:
     response_type: ResponseType
@@ -112,16 +155,24 @@ class SeesawEncoderResponse:
     def unpack_from(cls, buf: bytearray, frm: int):
         return SeesawEncoderResponse(*cls.unpacker.unpack_from(buf, frm))
 
+    def data_encoderpressevent(self) -> EncoderPressEvent:
+        return EncoderPressEvent(number=self.enc, edge=self.data)
 
-@dataclass
-class EncoderEvent:
-    """Holds information about a key event in its properties
+    def data_encoderdeltaevent(self) -> EncoderDeltaEvent:
+        return EncoderDeltaEvent(number=self.enc, delta=self.data)
 
-       :param int num: The number of the encoder
-       :param int edge: One of the EDGE propertes of `EncoderEdge`
-    """
-    number: int
-    edge: int
+    def data_encodervalueevent(self) -> EncoderValueEvent:
+        return EncoderValueEvent(number=self.enc, value=self.data)
+
+    def data_encoderevent(self) -> EncoderEvent:
+        if self.response_type == ResponseType.TYPE_PRESS:
+            return self.data_encoderpressevent()
+        elif self.response_type == ResponseType.TYPE_DELTA:
+            return self.data_encoderdeltaevent()
+        elif self.response_type == ResponseType.TYPE_VALUE:
+            return self.data_encodervalueevent()
+        assert False, "Bad response type"
+
 
 # pylint: enable=too-few-public-methods
 
@@ -135,7 +186,7 @@ class Encoder(Seesaw):
 
     packer: ClassVar[struct.Struct] = struct.Struct('>I')
 
-    def __init__(self, i2c_bus, addr: int =0x49, drdy=None, num_encoders: int = _NUM_ENCODERS):
+    def __init__(self, i2c_bus, addr: int = 0x49, drdy=None, num_encoders: int = _NUM_ENCODERS):
         super(Encoder, self).__init__(i2c_bus, addr, drdy,
                                       rd_delay=0.0001, wr_delay=0.0001)
         self._interrupt_enabled = False
