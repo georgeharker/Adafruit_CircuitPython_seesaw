@@ -29,21 +29,21 @@
 import struct
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import NamedTuple
-from typing import ClassVar
+from typing import ClassVar, List, NamedTuple
+
 
 try:
     from micropython import const
 except ImportError:
-
     def const(x):
         return x
 
 
 from adafruit_seesaw.seesaw import Seesaw
 
+
 __version__ = "0.0.0-auto.0"
-__repo__ = "https://github.com/adafruit/Adafruit_CircuitPython_seesaw.git"
+__repo__ = "https://github.com/georgeharker/Adafruit_CircuitPython_seesaw.git"
 
 _ENCODER_BASE = const(0x11)
 
@@ -74,6 +74,21 @@ class EncoderError(Exception):
     pass
 
 
+class EncoderEdge(IntEnum):
+    #: Indicates that the switch is currently pressed
+    EDGE_HIGH = 0
+    #: Indicates that the switch is currently released
+    EDGE_LOW = 1
+    #: Indicates that the switch was recently pressed
+    EDGE_FALLING = 2
+    #: Indicates that the switch was recently released
+    EDGE_RISING = 3
+    #: Indicates that the value was recently changed
+    VALUE_CHANGE = 4
+    #: Indicates that the delta was recently updated
+    DELTA = 5
+
+
 @dataclass
 class SeesawEncoderResponse:
     response_type: ResponseType
@@ -83,7 +98,7 @@ class SeesawEncoderResponse:
     def __post_init__(self):
         try:
             self.response_type = ResponseType(self.response_type)
-        except Exception as e:
+        except Exception as e:  # noqa: F841
             # print(e)
             self.responseType = ResponseType.TYPE_INVALID
 
@@ -98,18 +113,13 @@ class SeesawEncoderResponse:
         return SeesawEncoderResponse(*cls.unpacker.unpack_from(buf, frm))
 
 
-# pylint: disable=too-few-public-methods
+@dataclass
 class EncoderEvent:
     """Holds information about a key event in its properties
 
-       :param int num: The number of the key
-       :param int edge: One of the EDGE propertes of `adafruit_seesaw.keypad.Keypad`
+       :param int num: The number of the encoder
+       :param int edge: One of the EDGE propertes of `EncoderEdge`
     """
-
-    def __init__(self, num, edge):
-        self.number = int(num)
-        self.edge = int(edge)
-
 
 # pylint: enable=too-few-public-methods
 
@@ -121,22 +131,9 @@ class Encoder(Seesaw):
        :param int addr: I2C address of the SeeSaw device
        :param ~digitalio.DigitalInOut drdy: Pin connected to SeeSaw's 'ready' output"""
 
-    #: Indicates that the switch is currently pressed
-    EDGE_HIGH = 0
-    #: Indicates that the switch is currently released
-    EDGE_LOW = 1
-    #: Indicates that the switch was recently pressed
-    EDGE_FALLING = 2
-    #: Indicates that the switch was recently released
-    EDGE_RISING = 3
-    #: Indicates that the value was recently changed
-    VALUE_CHANGE = 4
-    #: Indicates that the delta was recently updated
-    DELTA = 5
-
     packer: ClassVar[struct.Struct] = struct.Struct('>I')
 
-    def __init__(self, i2c_bus, addr=0x49, drdy=None, num_encoders = _NUM_ENCODERS):
+    def __init__(self, i2c_bus, addr: int =0x49, drdy=None, num_encoders: int = _NUM_ENCODERS):
         super(Encoder, self).__init__(i2c_bus, addr, drdy,
                                       rd_delay=0.0001, wr_delay=0.0001)
         self._interrupt_enabled = False
@@ -145,12 +142,12 @@ class Encoder(Seesaw):
         self._tx_count = 0
 
     @property
-    def interrupt_enabled(self):
+    def interrupt_enabled(self) -> bool:
         """Retrieve or set the interrupt enable flag"""
         return self._interrupt_enabled
 
     @interrupt_enabled.setter
-    def interrupt_enabled(self, value):
+    def interrupt_enabled(self, value: bool) -> None:
         if value not in (True, False):
             raise ValueError("interrupt_enabled must be True or False")
 
@@ -162,7 +159,7 @@ class Encoder(Seesaw):
                 self.write8(_ENCODER_BASE, _ENCODER_INTENCLR, enc | 0x01 << 4)
 
     @property
-    def count(self):
+    def count(self) -> int:
         """Retrieve or set the number of event"""
         try:
             self._tx_count += 1
@@ -172,11 +169,11 @@ class Encoder(Seesaw):
                 raise EncoderError("CORRUPTED %s" % list(["%x" % x for x in buf]))
             if d.data < 0:
                 raise EncoderError("CORRUPTED %s" % list(["%x" % x for x in buf]))
-        except OSError as e:
+        except OSError as e:  # noqa: F841
             self._tx_errors += 1
             # print(e)
             return 0
-        except EncoderError as e:
+        except EncoderError as e:  # noqa: F841
             self._tx_errors += 1
             # print(e)
             return 0
@@ -184,12 +181,14 @@ class Encoder(Seesaw):
 
     # pylint: disable=unused-argument, no-self-use
     @count.setter
-    def count(self, value):
+    def count(self, value) -> None:
         raise AttributeError("count is read only")
 
     # pylint: enable=unused-argument, no-self-use
 
-    def set_event(self, enc, edge, enable):
+    def set_event(self, enc: int,
+                  edge: int,  # EncoderEdge
+                  enable: bool):
         """Control which kinds of events are set
 
            :param int enc: The encoder number
@@ -204,7 +203,7 @@ class Encoder(Seesaw):
         cmd = self.packer.pack((enable << 20) | (1 << (edge + 4)) | enc)
         self.write(_ENCODER_BASE, _ENCODER_EVENT, cmd)
 
-    def read_encoders(self, num):
+    def read_encoders(self, num: int) -> List[SeesawEncoderResponse]:
         """Read data from the keypad
 
         :param int num: The number of bytes to read"""
@@ -214,11 +213,11 @@ class Encoder(Seesaw):
             self.read(_ENCODER_BASE, _ENCODER_FIFO, buf)
             return [SeesawEncoderResponse.unpack_from(buf, i * 4)
                     for i in range(0, num)]
-        except OSError as e:
+        except OSError as e:  # noqa: F841
             self._tx_errors += 1
             # print(e)
             return []
-        except EncoderError as e:
+        except EncoderError as e:  # noqa: F841
             self._tx_errors += 1
             # print(e)
             return []

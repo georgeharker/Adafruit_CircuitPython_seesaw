@@ -35,7 +35,7 @@ except ImportError:
 
 
 __version__ = "0.0.0-auto.0"
-__repo__ = "https://github.com/adafruit/Adafruit_CircuitPython_seesaw.git"
+__repo__ = "https://github.com/georgeharker/Adafruit_CircuitPython_seesaw.git"
 
 _ADC_INPUT_0_PIN = const(0x02)
 _ADC_INPUT_1_PIN = const(0x03)

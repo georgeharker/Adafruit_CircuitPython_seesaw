@@ -44,7 +44,7 @@ from adafruit_seesaw.seesaw import Seesaw
 
 
 __version__ = "0.0.0-auto.0"
-__repo__ = "https://github.com/adafruit/Adafruit_CircuitPython_seesaw.git"
+__repo__ = "https://github.com/georgeharker/Adafruit_CircuitPython_seesaw.git"
 
 _KEYPAD_BASE = const(0x10)
 

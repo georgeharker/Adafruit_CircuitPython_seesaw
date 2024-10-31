@@ -44,7 +44,7 @@ except ImportError:
 
 
 __version__ = "1.2.3"
-__repo__ = "https://github.com/adafruit/Adafruit_CircuitPython_seesaw.git"
+__repo__ = "https://github.com/georgeharker/Adafruit_CircuitPython_seesaw.git"
 
 _NEOPIXEL_BASE = const(0x0E)
 
@@ -74,6 +74,7 @@ PixelType = Union[PixelType3, PixelType4]
 ColorType3 = Tuple[float, float, float]
 ColorType4 = Tuple[float, float, float, float]
 ColorType = Union[ColorType3, ColorType4, int]
+
 
 class NeoPixel:
     """Control NeoPixels connected to a seesaw
