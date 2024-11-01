@@ -89,12 +89,20 @@ class EncoderEdge(IntEnum):
     DELTA = 5
 
 
+class EncoderEventType(IntEnum):
+    PRESS = 0
+    VALUE = 1
+    DELTA = 2
+
+
 @dataclass
 class EncoderEvent:
     """Holds information about an encoder event in its properties
 
+       :param event_type: the event type
        :param int num: The number of the encoder
     """
+    event_type: int  # EncoderEventType
     number: int
 
 
@@ -104,7 +112,7 @@ class EncoderPressEvent(EncoderEvent):
 
        :param int edge: One of the EDGE propertes of `EncoderEdge`
     """
-    edge: int
+    edge: int  # EncoderEdge
 
 
 @dataclass
@@ -149,13 +157,19 @@ class SeesawEncoderResponse:
         return SeesawEncoderResponse(*cls.unpacker.unpack_from(buf, frm))
 
     def data_encoderpressevent(self) -> EncoderPressEvent:
-        return EncoderPressEvent(number=self.enc, edge=self.data)
+        return EncoderPressEvent(
+            event_type=EncoderEventType.PRESS,
+            number=self.enc, edge=self.data)
 
     def data_encoderdeltaevent(self) -> EncoderDeltaEvent:
-        return EncoderDeltaEvent(number=self.enc, delta=self.data)
+        return EncoderDeltaEvent(
+            event_type=EncoderEventType.DELTA,
+            number=self.enc, delta=self.data)
 
     def data_encodervalueevent(self) -> EncoderValueEvent:
-        return EncoderValueEvent(number=self.enc, value=self.data)
+        return EncoderValueEvent(
+            event_type=EncoderEventType.VALUE,
+            number=self.enc, value=self.data)
 
     def data_encoderevent(self) -> EncoderEvent:
         if self.response_type == ResponseType.TYPE_PRESS:
