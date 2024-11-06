@@ -191,7 +191,7 @@ class Encoder(Seesaw):
        :param int addr: I2C address of the SeeSaw device
        :param ~digitalio.DigitalInOut drdy: Pin connected to SeeSaw's 'ready' output"""
 
-    packer: ClassVar[struct.Struct] = struct.Struct('>I')
+    packer: ClassVar[struct.Struct] = struct.Struct('<I')
 
     def __init__(self, i2c_bus, addr: int = 0x49, drdy=None, num_encoders: int = _NUM_ENCODERS):
         super(Encoder, self).__init__(i2c_bus, addr, drdy,
@@ -200,6 +200,29 @@ class Encoder(Seesaw):
         self._num_encoders = num_encoders
         self._tx_errors = 0
         self._tx_count = 0
+
+    def _read_reg(self, reg: int, response_type: ResponseType):
+        try:
+            self._tx_count += 1
+            buf = self.readn(_ENCODER_BASE, reg, 4)
+            d = SeesawEncoderResponse.unpack(buf)
+            if d.response_type != response_type:
+                raise EncoderError("CORRUPTED %s" % list(["%x" % x for x in buf]))
+        except OSError as e:  # noqa: F841
+            self._tx_errors += 1
+            # print(e)
+            raise e
+        except EncoderError as e:  # noqa: F841
+            self._tx_errors += 1
+            # print(e)
+            raise e
+        return d.data
+
+    def _write_reg(self, reg: int, cmd: bytearray):
+        self.write(_ENCODER_BASE, reg, cmd)
+
+    def _encoder_reg(self, reg: int, encoder: int):
+        return reg | (encoder & 0xF)
 
     @property
     def interrupt_enabled(self) -> bool:
@@ -213,10 +236,25 @@ class Encoder(Seesaw):
 
         self._interrupt_enabled = value
         for enc in range(self._num_encoders):
+            cmd = self.packer.pack(0x1)
             if value:
-                self.write8(_ENCODER_BASE, _ENCODER_INTENSET, enc | 0x01 << 4)
+                self._write_reg(self._encoder_reg(_ENCODER_INTENSET, enc), cmd)
             else:
-                self.write8(_ENCODER_BASE, _ENCODER_INTENCLR, enc | 0x01 << 4)
+                self._write_reg(self._encoder_reg(_ENCODER_INTENCLR, enc), cmd)
+
+    def value(self, encoder: int) -> int:
+        return self._read_reg(self._encoder_reg_(_ENCODER_POSITION, encoder))
+
+    def set_value(self, encoder: int, value: int) -> None:
+        cmd = self.packer.pack(value)
+        self._write_reg(self._encoder_reg(_ENCODER_POSITION, encoder), cmd)
+
+    def delta(self, encoder: int) -> int:
+        return self._read_reg(self._encoder_reg_(_ENCODER_DELTA, encoder))
+
+    def zero_delta(self, encoder: int) -> None:
+        cmd = self.packer.pack(0)
+        self._write_reg(self._encoder_reg_(_ENCODER_DELTA, encoder), cmd)
 
     @property
     def count(self) -> int:
@@ -260,8 +298,8 @@ class Encoder(Seesaw):
         if edge > 5 or edge < 0:
             raise ValueError("invalid edge")
 
-        cmd = self.packer.pack((enable << 20) | (1 << (edge + 4)) | enc)
-        self.write(_ENCODER_BASE, _ENCODER_EVENT, cmd)
+        cmd = self.packer.pack((enable << 16) | (1 << edge))
+        self.write(_ENCODER_BASE, self._encoder_reg(_ENCODER_EVENT, enc), cmd)
 
     def read_encoders(self, num: int) -> List[SeesawEncoderResponse]:
         """Read data from the keypad
