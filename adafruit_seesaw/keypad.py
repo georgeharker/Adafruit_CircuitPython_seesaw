@@ -117,7 +117,7 @@ class SeesawKeyResponse:
 
     def data_keyevent(self) -> KeyEvent:
         assert self.response_type == ResponseType.TYPE_KEY
-        return KeyEvent((self.data >> 2) & 0x3f, KeypadEdge(self.data & 0x02))
+        return KeyEvent((self.data >> 2) & 0x3f, KeypadEdge(self.data & 0x03))
 
 
 class Keypad(Seesaw):
