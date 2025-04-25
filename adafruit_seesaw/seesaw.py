@@ -163,7 +163,7 @@ class Seesaw:
         self.i2c_device = I2CDevice(i2c_bus, addr)
         self.sw_reset()
 
-    def sw_reset(self, new_address = None):
+    def sw_reset(self, new_address=None):
         """Trigger a software reset of the SeeSaw chip"""
         self.write8(_STATUS_BASE, _STATUS_SWRST, 0xFF)
         time.sleep(SWRST_DELAY)
@@ -175,10 +175,8 @@ class Seesaw:
 
         if chip_id != _HW_ID_CODE:
             raise RuntimeError(
-                "Seesaw hardware ID returned (0x{:x}) is not "
-                "correct! Expected 0x{:x}. Please check your wiring.".format(
-                    chip_id, _HW_ID_CODE
-                )
+                f"Seesaw hardware ID returned (0x{chip_id:x}) is not "
+                f"correct! Expected 0x{_HW_ID_CODE:x}. Please check your wiring."
             )
 
         pid = self.get_version() >> 16
@@ -228,8 +226,8 @@ class Seesaw:
     def digital_read(self, pin):
         """Get the value of an input pin by number"""
         if pin >= 32:
-            return self.digital_read_bulk_b((1 << (pin - 32))) != 0
-        return self.digital_read_bulk((1 << pin)) != 0
+            return self.digital_read_bulk_b(1 << (pin - 32)) != 0
+        return self.digital_read_bulk(1 << pin) != 0
 
     def digital_read_bulk(self, pins, delay=0.008):
         """Get the values of all the pins on the 'A' port as a bitmask"""

@@ -128,9 +128,9 @@ class Keypad(Seesaw):
        :param ~digitalio.DigitalInOut drdy: Pin connected to SeeSaw's 'ready' output"""
 
     def __init__(self, i2c_bus, addr: int = 0x49, drdy=None):
-        super(Keypad, self).__init__(i2c_bus, addr, drdy,
-                                     rd_delay=DEFAULT_RD_DELAY,
-                                     wr_delay=DEFAULT_WR_DELAY)
+        super().__init__(i2c_bus, addr, drdy,
+                         rd_delay=DEFAULT_RD_DELAY,
+                         wr_delay=DEFAULT_WR_DELAY)
         self._interrupt_enabled = False
         self._tx_errors = 0
         self._tx_count = 0
@@ -159,9 +159,9 @@ class Keypad(Seesaw):
             buf = self.readn(_KEYPAD_BASE, _KEYPAD_COUNT, 2)
             d = SeesawKeyResponse.unpack(buf)
             if d.response_type != ResponseType.TYPE_COUNT:
-                raise KeypadError("CORRUPTED %s" % list(["%x" % x for x in buf]))
+                raise KeypadError(f'CORRUPTED {list([f"{x:x}" for x in buf])}')
             if d.data < 0:
-                raise KeypadError("CORRUPTED %s" % list(["%x" % x for x in buf]))
+                raise KeypadError(f'CORRUPTED {list([f"{x:x}" for x in buf])}')
         except OSError as e:  # noqa: F841
             # print(e)
             self._tx_errors += 1
@@ -196,7 +196,7 @@ class Keypad(Seesaw):
 
         self.write(_KEYPAD_BASE, _KEYPAD_EVENT, cmd)
 
-    def read_keypad(self, num = None) -> List[SeesawKeyResponse]:
+    def read_keypad(self, num=None) -> List[SeesawKeyResponse]:
         """Read data from the keypad
         :param int num: The number of bytes to read"""
         if num is None:
@@ -216,4 +216,3 @@ class Keypad(Seesaw):
             self._tx_errors += 1
             # print(e)
             return []
-

@@ -178,7 +178,7 @@ class SeesawEncoderResponse:
             return self.data_encoderdeltaevent()
         elif self.response_type == ResponseType.TYPE_VALUE:
             return self.data_encodervalueevent()
-        assert False, "Bad response type"
+        raise AssertionError("Bad response type")
 
 
 # pylint: enable=too-few-public-methods
@@ -194,8 +194,8 @@ class Encoder(Seesaw):
     packer: ClassVar[struct.Struct] = struct.Struct('<I')
 
     def __init__(self, i2c_bus, addr: int = 0x49, drdy=None, num_encoders: int = _NUM_ENCODERS):
-        super(Encoder, self).__init__(i2c_bus, addr, drdy,
-                                      rd_delay=0.0001, wr_delay=0.0001)
+        super().__init__(i2c_bus, addr, drdy,
+                         rd_delay=0.0001, wr_delay=0.0001)
         self._interrupt_enabled = False
         self._num_encoders = num_encoders
         self._tx_errors = 0
@@ -207,7 +207,7 @@ class Encoder(Seesaw):
             buf = self.readn(_ENCODER_BASE, reg, 4)
             d = SeesawEncoderResponse.unpack(buf)
             if d.response_type != response_type:
-                raise EncoderError("CORRUPTED %s" % list(["%x" % x for x in buf]))
+                raise EncoderError(f'CORRUPTED {list([f"{x:x}" for x in buf])}')
         except OSError as e:  # noqa: F841
             self._tx_errors += 1
             # print(e)
@@ -218,7 +218,7 @@ class Encoder(Seesaw):
             raise e
         return d.data
 
-    def _write_reg(self, reg: int, cmd: bytearray):
+    def _write_reg(self, reg: int, cmd: bytearray | bytes):
         self.write(_ENCODER_BASE, reg, cmd)
 
     def _encoder_reg(self, reg: int, encoder: int):
@@ -243,18 +243,20 @@ class Encoder(Seesaw):
                 self._write_reg(self._encoder_reg(_ENCODER_INTENCLR, enc), cmd)
 
     def value(self, encoder: int) -> int:
-        return self._read_reg(self._encoder_reg_(_ENCODER_POSITION, encoder))
+        return self._read_reg(self._encoder_reg(_ENCODER_POSITION, encoder),
+                              ResponseType.TYPE_VALUE)
 
     def set_value(self, encoder: int, value: int) -> None:
         cmd = self.packer.pack(value)
         self._write_reg(self._encoder_reg(_ENCODER_POSITION, encoder), cmd)
 
     def delta(self, encoder: int) -> int:
-        return self._read_reg(self._encoder_reg_(_ENCODER_DELTA, encoder))
+        return self._read_reg(self._encoder_reg(_ENCODER_DELTA, encoder),
+                              ResponseType.TYPE_DELTA)
 
     def zero_delta(self, encoder: int) -> None:
         cmd = self.packer.pack(0)
-        self._write_reg(self._encoder_reg_(_ENCODER_DELTA, encoder), cmd)
+        self._write_reg(self._encoder_reg(_ENCODER_DELTA, encoder), cmd)
 
     @property
     def count(self) -> int:
@@ -264,9 +266,9 @@ class Encoder(Seesaw):
             buf = self.readn(_ENCODER_BASE, _ENCODER_COUNT, 4)
             d = SeesawEncoderResponse.unpack(buf)
             if d.response_type != ResponseType.TYPE_COUNT:
-                raise EncoderError("CORRUPTED %s" % list(["%x" % x for x in buf]))
+                raise EncoderError(f'CORRUPTED {list([f"{x:x}" for x in buf])}')
             if d.data < 0:
-                raise EncoderError("CORRUPTED %s" % list(["%x" % x for x in buf]))
+                raise EncoderError(f'CORRUPTED {list([f"{x:x}" for x in buf])}')
         except OSError as e:  # noqa: F841
             self._tx_errors += 1
             # print(e)
