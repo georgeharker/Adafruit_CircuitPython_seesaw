@@ -195,7 +195,7 @@ class Encoder(Seesaw):
 
     def __init__(self, i2c_bus, addr: int = 0x49, drdy=None, num_encoders: int = _NUM_ENCODERS):
         super().__init__(i2c_bus, addr, drdy,
-                         rd_delay=0.0001, wr_delay=0.0001)
+                         rd_delay=0.0005, wr_delay=0.0005)
         self._interrupt_enabled = False
         self._num_encoders = num_encoders
         self._tx_errors = 0
