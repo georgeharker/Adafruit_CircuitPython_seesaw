@@ -61,9 +61,9 @@ DEFAULT_WR_DELAY = const(0.008)
 
 class ResponseType(IntEnum):
     # Types for the repsonse
-    TYPE_KEY = 0
-    TYPE_COUNT = 1
-    TYPE_STATUS = 2
+    TYPE_KEY = 0xa1
+    TYPE_COUNT = 0xb1
+    TYPE_STATUS = 0xc1
     TYPE_INVALID = 0xff
 
 
