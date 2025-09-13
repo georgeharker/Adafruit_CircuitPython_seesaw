@@ -459,7 +459,7 @@ class Seesaw:
 
     def write(self, reg_base, reg, buf=None, delay=None):
         """Write an arbitrary I2C register range on the device"""
-        delay = delay or self._rd_delay
+        delay = delay or self._wr_delay
         full_buffer = bytearray([reg_base, reg])
         if buf is not None:
             full_buffer += buf
